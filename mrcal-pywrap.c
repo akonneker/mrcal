@@ -4159,9 +4159,9 @@ static const char measurement_index_boards_docstring[] =
 static const char measurement_index_points_docstring[] =
 #include "measurement_index_points.docstring.h"
     ;
-static const char measurement_index_points_triangulated_docstring[] =
-#include "measurement_index_points_triangulated.docstring.h"
-    ;
+// static const char measurement_index_points_triangulated_docstring[] =
+// #include "measurement_index_points_triangulated.docstring.h"
+    // ;
 static const char measurement_index_regularization_docstring[] =
 #include "measurement_index_regularization.docstring.h"
     ;
@@ -4171,9 +4171,9 @@ static const char num_measurements_boards_docstring[] =
 static const char num_measurements_points_docstring[] =
 #include "num_measurements_points.docstring.h"
     ;
-static const char num_measurements_points_triangulated_docstring[] =
-#include "num_measurements_points_triangulated.docstring.h"
-    ;
+// static const char num_measurements_points_triangulated_docstring[] =
+// #include "num_measurements_points_triangulated.docstring.h"
+    // ;
 static const char num_measurements_regularization_docstring[] =
 #include "num_measurements_regularization.docstring.h"
     ;
@@ -4183,9 +4183,9 @@ static const char num_measurements_docstring[] =
 static const char corresponding_icam_extrinsics_docstring[] =
 #include "corresponding_icam_extrinsics.docstring.h"
     ;
-static const char decode_observation_indices_points_triangulated_docstring[] =
-#include "decode_observation_indices_points_triangulated.docstring.h"
-    ;
+// static const char decode_observation_indices_points_triangulated_docstring[] =
+// #include "decode_observation_indices_points_triangulated.docstring.h"
+    // ;
 
 static const char num_states_docstring[] =
 #include "num_states.docstring.h"
@@ -4256,15 +4256,15 @@ static PyMethodDef methods[] =
       PYMETHODDEF_ENTRY(, unpack_state,                    METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, measurement_index_boards,        METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, measurement_index_points,        METH_VARARGS | METH_KEYWORDS),
-      PYMETHODDEF_ENTRY(, measurement_index_points_triangulated,METH_VARARGS | METH_KEYWORDS),
+    //   PYMETHODDEF_ENTRY(, measurement_index_points_triangulated,METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, measurement_index_regularization,METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, num_measurements_boards,         METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, num_measurements_points,         METH_VARARGS | METH_KEYWORDS),
-      PYMETHODDEF_ENTRY(, num_measurements_points_triangulated,METH_VARARGS | METH_KEYWORDS),
+    //   PYMETHODDEF_ENTRY(, num_measurements_points_triangulated,METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, num_measurements_regularization, METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, num_measurements,                METH_VARARGS | METH_KEYWORDS),
       PYMETHODDEF_ENTRY(, corresponding_icam_extrinsics,   METH_VARARGS | METH_KEYWORDS),
-      PYMETHODDEF_ENTRY(, decode_observation_indices_points_triangulated,METH_VARARGS | METH_KEYWORDS),
+    //   PYMETHODDEF_ENTRY(, decode_observation_indices_points_triangulated,METH_VARARGS | METH_KEYWORDS),
 
       PYMETHODDEF_ENTRY(,lensmodel_metadata_and_config,METH_VARARGS),
       PYMETHODDEF_ENTRY(,lensmodel_num_params,         METH_VARARGS),
