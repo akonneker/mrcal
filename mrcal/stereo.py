@@ -419,18 +419,18 @@ else:                   we return this tuple of models, dict of metadata
             else:
                 raise Exception("Stereo rectification is only possible with a central projection. Please centralize your models")
 
-    if rectification_model == 'LENSMODEL_PINHOLE':
-        # The pinhole rectification path is not implemented in C yet. Call the
-        # Python
-        return _rectified_system_python(models,
-                                        az_fov_deg          = az_fov_deg,
-                                        el_fov_deg          = el_fov_deg,
-                                        az0_deg             = az0_deg,
-                                        el0_deg             = el0_deg,
-                                        pixels_per_deg_az   = pixels_per_deg_az,
-                                        pixels_per_deg_el   = pixels_per_deg_el,
-                                        rectification_model = rectification_model,
-                                        return_metadata     = return_metadata)
+    # if rectification_model == 'LENSMODEL_PINHOLE':
+    #     # The pinhole rectification path is not implemented in C yet. Call the
+    #     # Python
+    #     return _rectified_system_python(models,
+    #                                     az_fov_deg          = az_fov_deg,
+    #                                     el_fov_deg          = el_fov_deg,
+    #                                     az0_deg             = az0_deg,
+    #                                     el0_deg             = el0_deg,
+    #                                     pixels_per_deg_az   = pixels_per_deg_az,
+    #                                     pixels_per_deg_el   = pixels_per_deg_el,
+    #                                     rectification_model = rectification_model,
+    #                                     return_metadata     = return_metadata)
 
     # The guts of this function are implemented in C. Call that
     pixels_per_deg_az, \

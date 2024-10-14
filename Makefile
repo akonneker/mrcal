@@ -31,7 +31,8 @@ LIB_SOURCES +=			\
   poseutils-opencv.c		\
   poseutils-uses-autodiff.cc	\
   triangulation.cc              \
-  cahvore.cc
+  cahvore.cc			\
+  quartic.c
 
 ifneq (${USE_LIBELAS},) # using libelas
 LIB_SOURCES := $(LIB_SOURCES) stereo-matching-libelas.cc
@@ -66,7 +67,8 @@ DIST_INCLUDE +=			\
 	poseutils.h		\
 	triangulation.h		\
 	mrcal-types.h		\
-	stereo.h
+	stereo.h		\
+	quartic.h
 
 
 

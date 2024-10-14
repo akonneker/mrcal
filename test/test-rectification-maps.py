@@ -50,7 +50,7 @@ for rectification in ('LENSMODEL_LATLON', 'LENSMODEL_PINHOLE'):
         az_fov_deg = 90
         el_fov_deg = 50
         models_rectified = \
-            mrcal.stereo._rectified_system_python( (model0_zoom, model1_zoom),
+            mrcal.stereo.rectified_system( (model0_zoom, model1_zoom),
                                                    az_fov_deg = az_fov_deg/zoom,
                                                    el_fov_deg = el_fov_deg/zoom,
                                                    pixels_per_deg_az = -1./8.,

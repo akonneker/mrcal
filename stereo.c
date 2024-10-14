@@ -15,6 +15,7 @@
 #include "mrcal.h"
 #include "minimath/minimath.h"
 #include "util.h"
+#include "quartic.h"
 
 // The equivalent function in Python is _rectified_resolution_python() in
 // stereo.py
@@ -171,6 +172,52 @@ bool mrcal_rectified_resolution( // output and input
     return true;
 }
 
+double cxy(double fxy, double tan_azel, double fov_deg) {
+    double cos_fov = cos(fov_deg*M_PI/180.0);
+    double cos2_fov = cos_fov*cos_fov;
+    double K = 2*tan_azel;
+
+    complex_t poly[5];
+    poly[0].real = cos2_fov*(K*K + 1) - 1;
+    poly[0].imag = 0;
+    poly[1].real = 2*K*(cos2_fov + 1);
+    poly[1].imag = 0;
+    poly[2].real = cos2_fov*K*K + 2*cos2_fov - K*K + 2;
+    poly[2].imag = 0;
+    poly[3].real = 2*K*(cos2_fov - 1);
+    poly[3].imag = 0;
+    poly[4].real = cos2_fov - 1;
+    poly[4].imag = 0;
+
+    complex_t sols[4];
+    const int num_sols = solve_poly(4, poly, sols);
+    int i;
+
+    double c_max = -1e30;
+    int idx_max = -1;
+    for(i=0; i<num_sols; i++){
+        double sol = sols[i].real;
+        if(cos_fov*(1 - K*sol - sol*sol) < -1e-9) {
+            continue;
+        }
+        if((int) round((tan_azel*fxy + sol*fxy)*2. + 1) <= 0) {
+            continue;
+        }
+        double c_temp = cos_fov*(1 - K*sol - sol*sol);
+        if(c_temp > c_max) {
+            c_max = c_temp;
+            idx_max = i;
+        }
+    }
+
+    if(idx_max == -1) {
+        MSG("Couldn't compute the rectified pinhole center pixel. Something is wrong.");
+        return -1;
+    }
+
+    return sols[idx_max].real*fxy;
+}
+
 // The equivalent function in Python is _rectified_system_python() in stereo.py
 //
 // Documentation is in the docstring of mrcal.rectified_system()
@@ -250,16 +297,6 @@ bool mrcal_rectified_system(// output
             return false;
         }
     }
-
-    ///// TODAY this C implementation supports MRCAL_LENSMODEL_LATLON only. This
-    ///// isn't a design choice, I just don't want to do the extra work yet. The
-    ///// API already is general enough to support both rectification schemes.
-    if( rectification_model_type != MRCAL_LENSMODEL_LATLON )
-    {
-        MSG("Today this C implementation supports MRCAL_LENSMODEL_LATLON only.");
-        return false;
-    }
-
 
     if(*pixels_per_deg_az == 0)
     {
@@ -406,6 +443,9 @@ bool mrcal_rectified_system(// output
     // have the maximum resolution
     fxycxy_rectified[0] = *pixels_per_deg_az / M_PI*180.;
     fxycxy_rectified[1] = *pixels_per_deg_el / M_PI*180.;
+     
+
+    if(rectification_model_type == MRCAL_LENSMODEL_LATLON) {
 
     // if rectification_model == 'LENSMODEL_LATLON':
     //     # The angular resolution is consistent everywhere, so fx,fy are already
@@ -413,14 +453,71 @@ bool mrcal_rectified_system(// output
     //     # (az0,el0) = unproject(imager center)
     //     Naz = round(az_fov_deg*pixels_per_deg_az)
     //     Nel = round(el_fov_deg*pixels_per_deg_el)
-    imagersize_rectified[0] = (int)round(azel_fov_deg->x * (*pixels_per_deg_az));
-    imagersize_rectified[1] = (int)round(azel_fov_deg->y * (*pixels_per_deg_el));
+        imagersize_rectified[0] = (int)round(azel_fov_deg->x * (*pixels_per_deg_az));
+        imagersize_rectified[1] = (int)round(azel_fov_deg->y * (*pixels_per_deg_el));
 
-    // fxycxy[2:] =
-    //     np.array(((Naz-1.)/2.,(Nel-1.)/2.)) -
-    //     np.array((az0,el0)) * fxycxy[:2]
-    fxycxy_rectified[2] = ((double)(imagersize_rectified[0] - 1)) / 2 - azel0.x * fxycxy_rectified[0];
-    fxycxy_rectified[3] = ((double)(imagersize_rectified[1] - 1)) / 2 - azel0.y * fxycxy_rectified[1];
+        // fxycxy[2:] =
+        //     np.array(((Naz-1.)/2.,(Nel-1.)/2.)) -
+        //     np.array((az0,el0)) * fxycxy[:2]
+        fxycxy_rectified[2] = ((double)(imagersize_rectified[0] - 1)) / 2 - azel0.x * fxycxy_rectified[0];
+        fxycxy_rectified[3] = ((double)(imagersize_rectified[1] - 1)) / 2 - azel0.y * fxycxy_rectified[1];
+    } else {
+        // MRCAL_LENSMODEL_PINHOLE
+        double cos_az0 = cos(azel0.x);
+        double cos_el0 = cos(azel0.y);
+
+        fxycxy_rectified[0] *= (cos_az0*cos_az0);
+        fxycxy_rectified[1] *= (cos_el0*cos_el0);
+        
+        // fx,fy are set. Let's set cx,cy. Unlike the LENSMODEL_LATLON case, this
+        // is asymmetric, so I explicitly solve for (cx,Naz). cy,Nel work the
+        // same way. I want
+        //
+        //  tan(az0)*fx + cx = (Naz-1)/2
+        //
+        //  inner( normalized(unproject(x=0)),
+        //         normalized(unproject(x=Naz-1)) ) = cos(fov)
+        //
+        // unproject(x=0    ) = [ (0     - cx)/fx, 0, 1]
+        // unproject(x=Naz-1) = [ (Naz-1 - cx)/fx, 0, 1]
+        //
+        // -> v0 ~ [ -cx/fx,           0, 1]
+        // -> v1 ~ [ 2*tanaz0 + cx/fx, 0, 1]
+        //
+        // Let K = 2*tanaz0 (we have K). Let C = cx/fx (we want to find C)
+        // -> v0 ~ [-C,1], v1 ~ [K+C,1]
+        // -> cosfov = (1 - K*C - C^2) / sqrt( (1+C^2)*(1+C^2+K^2+2*K*C))
+        // -> cos2fov*(1+C^2)*(1+C^2+K^2+2*K*C) - (1 - K*C - C^2)^2 = 0
+        // -> 0 =
+        //        C^4 * (cos2fov - 1) +
+        //        C^3 * 2 K (cos2fov - 1 ) +
+        //        C^2 * (cos2fov K^2 + 2 cos2fov - K^2 + 2) +
+        //        C   * 2 K ( cos2fov + 1 ) +
+        //        cos2fov ( K^2 + 1 ) - 1
+        //
+        // I can solve this numerically
+
+        double tan_az0 = tan(azel0.x);
+        double tan_el0 = tan(azel0.y);
+
+        double cx = cxy(fxycxy_rectified[0], tan_az0, azel_fov_deg->x);
+        double cy = cxy(fxycxy_rectified[1], tan_el0, azel_fov_deg->y);
+
+        if (cx == -1) {
+            return false;
+        }
+
+        if (cy == -1) {
+            return false;
+        }
+
+        fxycxy_rectified[2] = cx;
+        fxycxy_rectified[3] = cy;
+
+        imagersize_rectified[0] = round((tan_az0*fxycxy_rectified[0] + fxycxy_rectified[2])*2.) + 1;
+        imagersize_rectified[1] = round((tan_el0*fxycxy_rectified[1] + fxycxy_rectified[3])*2.) + 1;
+        
+    }
 
     if(imagersize_rectified[1] <= 0)
     {
